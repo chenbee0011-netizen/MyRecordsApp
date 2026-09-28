@@ -151,18 +151,11 @@
 
     </main>
 
-    <!-- JavaScript 邏輯區 -->
-    <script>
-        const quotes = [
-            "每一次的堅持，都是為了更好的自己。",
-            "今天不走，明天要跑。",
-            "把行事曆排滿，把夢想實現。",
-            "自律給你真正的自由。",
-            "種一棵樹最好的時間是十年前，其次是現在。",
-            "不積跬步，無以至千里。",
-            "你的時間有限，不要浪費在重複別人的生活上。"
-        ];
+    <!-- 引入外部名言庫 JS -->
+    <script src="quotes.js"></script>
 
+    <!-- 主應用程式邏輯區 -->
+    <script>
         let tasks = JSON.parse(localStorage.getItem('fq_tasks')) || [];
         let rewards = JSON.parse(localStorage.getItem('fq_rewards')) || [
             { id: 1, name: "一杯珍珠奶茶", cost: 50 },
@@ -184,8 +177,12 @@
         };
 
         function setRandomQuote() {
-            const random = quotes[Math.floor(Math.random() * quotes.length)];
-            document.getElementById('quote-box').innerText = `"${random}"`;
+            if (typeof quotes !== 'undefined' && quotes.length > 0) {
+                const random = quotes[Math.floor(Math.random() * quotes.length)];
+                document.getElementById('quote-box').innerText = `"${random}"`;
+            } else {
+                document.getElementById('quote-box').innerText = `"每一次的堅持，都是為了更好的自己。"`;
+            }
         }
 
         function switchTab(pageNum) {
@@ -273,7 +270,6 @@
             const note = document.getElementById('task-note').value;
 
             if (editId) {
-                // 修改現有任務
                 const task = tasks.find(t => t.id == editId);
                 if (task) {
                     task.title = title;
@@ -284,7 +280,6 @@
                     task.note = note;
                 }
             } else {
-                // 新增任務
                 const newTask = {
                     id: Date.now(),
                     title, quadrant, date, repeat, points, note,
@@ -331,7 +326,6 @@
             }
         }
 
-        // 點擊循環邏輯：1下=完成(+點數), 2下=延後(+1天), 3下=重置
         function handleTaskClick(id) {
             const task = tasks.find(t => t.id === id);
             if (!task) return;
