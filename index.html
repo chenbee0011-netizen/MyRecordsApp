@@ -46,13 +46,20 @@
         <!-- 區塊 1：四象限記事 -->
         <section id="section-quadrants" class="space-y-6">
             
-            <!-- 日期篩選與表單切換 -->
-            <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl shadow-lg flex flex-col sm:flex-row justify-between items-center gap-4">
-                <div>
-                    <label class="block text-xs text-slate-400 mb-1">檢視指定日期任務：</label>
-                    <input type="date" id="date-filter" onchange="filterByDate(this.value)" class="bg-slate-800 border border-slate-700 text-slate-100 px-3 py-1.5 rounded text-sm">
+            <!-- 互動式月曆檢視 -->
+            <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl shadow-lg space-y-3">
+                <div class="flex justify-between items-center">
+                    <h3 id="calendar-month-title" class="font-bold text-sm text-slate-200">年月載入中...</h3>
+                    <div class="space-x-1">
+                        <button onclick="changeMonth(-1)" class="bg-slate-800 hover:bg-slate-700 px-2 py-1 rounded text-xs text-slate-300">◀ 上月</button>
+                        <button onclick="resetDateFilter()" class="bg-slate-800 hover:bg-slate-700 px-2 py-1 rounded text-xs text-slate-300">顯示全部</button>
+                        <button onclick="changeMonth(1)" class="bg-slate-800 hover:bg-slate-700 px-2 py-1 rounded text-xs text-slate-300">下月 ▶</button>
+                    </div>
                 </div>
-                <button onclick="resetDateFilter()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded border border-slate-700">顯示全部日期</button>
+                <div class="grid grid-cols-7 gap-1 text-center text-[10px] text-slate-400 font-bold">
+                    <div>日</div><div>一</div><div>二</div><div>三</div><div>四</div><div>五</div><div>六</div>
+                </div>
+                <div id="calendar-grid" class="grid grid-cols-7 gap-1 text-center text-xs"></div>
             </div>
 
             <!-- 新增/修改表單 -->
@@ -162,9 +169,20 @@
 
         <!-- 區塊 3：獎勵商城 -->
         <section id="section-store" class="hidden space-y-4">
-            <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl shadow-lg">
-                <h3 class="font-bold text-emerald-400 text-sm mb-1">🎁 獎勵兌換商城</h3>
-                <p class="text-xs text-slate-400 mb-4">用你的自律點數來解鎖專屬小確幸！</p>
+            <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl shadow-lg space-y-4">
+                <div>
+                    <h3 class="font-bold text-emerald-400 text-sm mb-1">🎁 獎勵兌換商城</h3>
+                    <p class="text-xs text-slate-400">用你的自律點數來解鎖專屬小確幸！</p>
+                </div>
+
+                <!-- 自訂獎勵新增表單 -->
+                <form onsubmit="addStoreItem(event)" class="bg-slate-800/60 p-3 rounded-xl border border-slate-700 grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    <input type="text" id="store-item-name" placeholder="自訂獎勵名稱" required class="bg-slate-900 border border-slate-700 text-slate-100 p-2 rounded text-sm">
+                    <input type="number" id="store-item-points" placeholder="所需點數" required min="1" class="bg-slate-900 border border-slate-700 text-slate-100 p-2 rounded text-sm">
+                    <input type="text" id="store-item-desc" placeholder="獎勵描述 (選填)" class="bg-slate-900 border border-slate-700 text-slate-100 p-2 rounded text-sm">
+                    <button type="submit" class="sm:col-span-3 bg-emerald-600 hover:bg-emerald-500 text-white py-1.5 rounded text-sm font-medium">+ 新增自訂獎勵項目</button>
+                </form>
+
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" id="store-items-list">
                     <!-- 動態載入商城項目 -->
                 </div>
@@ -177,8 +195,9 @@
         let tasks = JSON.parse(localStorage.getItem('focusquest_tasks')) || [];
         let userPoints = parseInt(localStorage.getItem('focusquest_points')) || 0;
         let selectedDateFilter = "";
+        let currentCalendarDate = new Date();
 
-        const storeItems = [
+        let storeItems = JSON.parse(localStorage.getItem('focusquest_store')) || [
             { id: 1, name: "普通 Oreo 冰炫風", points: 50, desc: "經典口味，讀書寫程式的最佳精神糧食" },
             { id: 2, name: "雙倍 Oreo 冰炫風", points: 70, desc: "加量升級版，給努力一整天的自己" },
             { id: 3, name: "7-11 飲料任選", points: 35, desc: "鋁箔包、茶飲或想喝的超商飲料" },
@@ -213,14 +232,63 @@
             if(tabName === 'store') renderStore();
         }
 
+        // 月曆相關邏輯
+        function renderCalendar() {
+            const year = currentCalendarDate.getFullYear();
+            const month = currentCalendarDate.getMonth();
+            document.getElementById('calendar-month-title').innerText = `${year}年 ${month + 1}月`;
+            
+            const firstDayIndex = new Date(year, month, 1).getDay();
+            const lastDay = new Date(year, month + 1, 0).getDate();
+            
+            const grid = document.getElementById('calendar-grid');
+            grid.innerHTML = '';
+            
+            for (let i = 0; i < firstDayIndex; i++) {
+                grid.innerHTML += `<div></div>`;
+            }
+            
+            const todayStr = getTodayString();
+            
+            for (let day = 1; day <= lastDay; day++) {
+                const mm = String(month + 1).padStart(2, '0');
+                const dd = String(day).padStart(2, '0');
+                const dateStr = `${year}-${mm}-${dd}`;
+                
+                let isSelected = selectedDateFilter === dateStr;
+                let isToday = todayStr === dateStr;
+                
+                let btnClass = "py-1.5 rounded transition flex flex-col items-center justify-center cursor-pointer text-xs ";
+                if (isSelected) {
+                    btnClass += "bg-indigo-600 text-white font-bold";
+                } else if (isToday) {
+                    btnClass += "bg-slate-800 text-indigo-300 border border-indigo-500/50";
+                } else {
+                    btnClass += "bg-slate-900/60 hover:bg-slate-800 text-slate-300";
+                }
+                
+                grid.innerHTML += `
+                    <div onclick="filterByDate('${dateStr}')" class="${btnClass}">
+                        <span>${day}</span>
+                    </div>
+                `;
+            }
+        }
+
+        function changeMonth(direction) {
+            currentCalendarDate.setMonth(currentCalendarDate.getMonth() + direction);
+            renderCalendar();
+        }
+
         function filterByDate(dateStr) {
             selectedDateFilter = dateStr;
+            renderCalendar();
             renderTasks();
         }
 
         function resetDateFilter() {
             selectedDateFilter = "";
-            document.getElementById('date-filter').value = "";
+            renderCalendar();
             renderTasks();
         }
 
@@ -298,13 +366,13 @@
             if (!task) return;
 
             if (task.clickState === 0) {
-                task.clickState = 1; // 完成
+                task.clickState = 1;
                 userPoints += task.points;
             } else if (task.clickState === 1) {
-                task.clickState = 2; // 延後
+                task.clickState = 2;
                 userPoints -= task.points;
             } else {
-                task.clickState = 0; // 恢復正常
+                task.clickState = 0;
             }
             saveAndRefresh();
         }
@@ -315,6 +383,28 @@
             task.clickState = 1;
             userPoints += decayedPoints;
             saveAndRefresh();
+        }
+
+        // 商城與自訂獎勵邏輯
+        function addStoreItem(e) {
+            e.preventDefault();
+            const name = document.getElementById('store-item-name').value;
+            const points = parseInt(document.getElementById('store-item-points').value);
+            const desc = document.getElementById('store-item-desc').value;
+            
+            storeItems.push({ id: Date.now(), name, points, desc });
+            localStorage.setItem('focusquest_store', JSON.stringify(storeItems));
+            
+            document.getElementById('store-item-name').value = '';
+            document.getElementById('store-item-points').value = '';
+            document.getElementById('store-item-desc').value = '';
+            renderStore();
+        }
+
+        function deleteStoreItem(itemId) {
+            storeItems = storeItems.filter(i => i.id != itemId);
+            localStorage.setItem('focusquest_store', JSON.stringify(storeItems));
+            renderStore();
         }
 
         function buyReward(itemId) {
@@ -339,6 +429,7 @@
 
         function renderAll() {
             document.getElementById('user-points').innerText = userPoints;
+            renderCalendar();
             renderTasks();
             renderBacklogCount();
         }
@@ -436,19 +527,23 @@
             storeList.innerHTML = '';
             storeItems.forEach(item => {
                 storeList.innerHTML += `
-                    <div class="bg-slate-800/60 border border-slate-700 p-3 rounded-xl flex justify-between items-center">
+                    <div class="bg-slate-800/60 border border-slate-700 p-3 rounded-xl flex justify-between items-between flex-col justify-between">
                         <div>
-                            <h4 class="font-semibold text-sm text-slate-200">${item.name}</h4>
-                            <p class="text-xs text-slate-400 mt-0.5">${item.desc}</p>
+                            <h4 class="font-semibold text-sm text-slate-200">${escapeHtml(item.name)}</h4>
+                            <p class="text-xs text-slate-400 mt-0.5">${escapeHtml(item.desc || '')}</p>
                             <span class="inline-block mt-2 text-xs font-bold text-amber-400">${item.points} 點</span>
                         </div>
-                        <button onclick="buyReward(${item.id})" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded text-xs font-medium">兌換</button>
+                        <div class="flex justify-end gap-2 mt-3 pt-2 border-t border-slate-700/50">
+                            <button onclick="deleteStoreItem(${item.id})" class="text-xs text-red-400 hover:underline">刪除</button>
+                            <button onclick="buyReward(${item.id})" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1 rounded text-xs font-medium">兌換</button>
+                        </div>
                     </div>
                 `;
             });
         }
 
         function escapeHtml(str) {
+            if (!str) return '';
             return str.replace(/[&<>'"]/g, 
                 tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
             );
