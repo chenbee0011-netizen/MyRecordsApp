@@ -1,0 +1,20 @@
+{
+  "name": "FocusQuest 遊戲化記事",
+  "short_name": "FocusQuest",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#090d16",
+  "theme_color": "#4f46e5",
+  "icons": [
+    {
+      "src": "icon-192.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg"
+    },
+    {
+      "src": "icon-512.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg"
+    }
+  ]
+}
