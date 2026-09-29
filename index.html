@@ -176,6 +176,7 @@
             document.getElementById('task-date').value = getTodayString();
         };
 
+        // 每次開啓/重新整理 App 時隨機更換一句金句
         function setRandomQuote() {
             if (typeof quotes !== 'undefined' && quotes.length > 0) {
                 const random = quotes[Math.floor(Math.random() * quotes.length)];
@@ -192,7 +193,8 @@
             }
             document.getElementById(`page-${pageNum}`).classList.remove('hidden');
             document.getElementById(`tab-btn-${pageNum}`).className = "flex-1 py-3 text-center font-bold text-indigo-400 border-b-2 border-indigo-500 transition";
-            setRandomQuote();
+            // 如果希望切換分頁時也順便換一句，可以保留下面這行；若只想「開App時換一次」，可以拿掉
+            // setRandomQuote(); 
         }
 
         function getTodayString() {
