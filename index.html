@@ -4,272 +4,223 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FocusQuest - 遊戲化四象限記事</title>
-    <!-- 引入 PWA 宣告 -->
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#4f46e5">
-    <!-- 引入 Tailwind CSS -->
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#020617">
     <style>
-        .task-completed { text-decoration: line-through; color: #64748b; background-color: #1e293b; opacity: 0.6; }
-        .task-postponed { border: 2px solid #eab308; background-color: #422006; }
+        .task-completed { opacity: 0.5; text-decoration: line-through; }
+        .task-postponed { border-style: dashed; }
     </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col">
 
-    <!-- 共用頂部：激勵名言欄框 --
-    <header class="bg-indigo-900 text-indigo-100 p-4 shadow-md text-center border-b border-indigo-800">
-        <div class="max-w-3xl mx-auto">
-            <span class="text-xs uppercase tracking-wider bg-indigo-700 px-2 py-0.5 rounded-full font-semibold">今日激勵</span>
-            <p id="quote-box" class="mt-2 text-lg font-medium italic">載入中...</p>
+    <!-- 頂部導覽列 -->
+    <header class="bg-slate-900 border-b border-slate-800 p-4 sticky top-0 z-50">
+        <div class="max-w-4xl mx-auto flex justify-between items-center">
+            <h1 class="text-lg font-bold text-indigo-400 flex items-center gap-2">
+                <span>🛡️</span> FocusQuest
+            </h1>
+            <div class="flex items-center gap-4">
+                <div class="bg-slate-800 px-3 py-1 rounded-full border border-slate-700 text-sm">
+                    ⭐ 積分：<span id="user-points" class="font-bold text-amber-400">0</span> 點
+                </div>
+            </div>
         </div>
     </header>
 
-    <!-- 主導航切換頁面 (3頁式架構) -->
-    <nav class="bg-slate-900 shadow-sm border-b border-slate-800 sticky top-0 z-10">
-        <div class="max-w-4xl mx-auto flex justify-around">
-            <button onclick="switchTab(1)" id="tab-btn-1" class="flex-1 py-3 text-center font-bold text-indigo-400 border-b-2 border-indigo-500 transition">📅 主頁 (月曆與象限)</button>
-            <button onclick="switchTab(2)" id="tab-btn-2" class="flex-1 py-3 text-center font-medium text-slate-400 hover:text-indigo-400 transition">⏳ 超時未作頁 (<span id="backlog-count">0</span>)</button>
-            <button onclick="switchTab(3)" id="tab-btn-3" class="flex-1 py-3 text-center font-medium text-slate-400 hover:text-indigo-400 transition">🎁 獎勵兌換 (<span id="user-points">0</span> 點)</button>
+    <!-- 分頁導航 -->
+    <nav class="bg-slate-900/50 border-b border-slate-800/80">
+        <div class="max-w-4xl mx-auto flex">
+            <button onclick="switchTab('quadrants')" id="tab-quadrants" class="flex-1 py-3 text-center text-sm font-medium border-b-2 border-indigo-500 text-indigo-400">四象限記事</button>
+            <button onclick="switchTab('backlog')" id="tab-backlog" class="flex-1 py-3 text-center text-sm font-medium border-b-2 border-transparent text-slate-400 hover:text-slate-200">
+                逾期 Backlog (<span id="backlog-count">0</span>)
+            </button>
+            <button onclick="switchTab('store')" id="tab-store" class="flex-1 py-3 text-center text-sm font-medium border-b-2 border-transparent text-slate-400 hover:text-slate-200">獎勵商城</button>
         </div>
     </nav>
 
-    <!-- 內容容器 -->
-    <main class="flex-1 max-w-4xl w-full mx-auto p-4 pb-16">
+    <!-- 主要內容區 -->
+    <main class="max-w-4xl mx-auto p-4 flex-1 w-full space-y-6">
 
-        <!-- ==================== 第一頁：主頁 (月曆與四象限) ==================== -->
-        <section id="page-1" class="space-y-6">
-            <!-- 月曆檢視區 -->
-            <div class="bg-slate-900 p-4 rounded-xl shadow-sm border border-slate-800">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 id="calendar-month-year" class="font-bold text-lg text-slate-200">2026年 6月</h2>
-                    <div class="space-x-2">
-                        <button onclick="changeMonth(-1)" class="px-3 py-1 bg-slate-800 hover:bg-slate-700 rounded text-sm text-slate-300">◀ 上月</button>
-                        <button onclick="changeMonth(1)" class="px-3 py-1 bg-slate-800 hover:bg-slate-700 rounded text-sm text-slate-300">下月 ▶</button>
-                    </div>
+        <!-- 區塊 1：四象限記事 -->
+        <section id="section-quadrants" class="space-y-6">
+            
+            <!-- 日期篩選與表單切換 -->
+            <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl shadow-lg flex flex-col sm:flex-row justify-between items-center gap-4">
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">檢視指定日期任務：</label>
+                    <input type="date" id="date-filter" onchange="filterByDate(this.value)" class="bg-slate-800 border border-slate-700 text-slate-100 px-3 py-1.5 rounded text-sm">
                 </div>
-                <!-- 日曆網格 -->
-                <div id="calendar-grid" class="grid grid-cols-7 gap-1 text-center text-sm"></div>
-                <div class="mt-2 text-xs text-slate-500 text-right">提示：點擊某一天可篩選該日記事</div>
+                <button onclick="resetDateFilter()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded border border-slate-700">顯示全部日期</button>
             </div>
 
-            <!-- 新增/編輯任務表單 -->
-            <div class="bg-slate-900 p-4 rounded-xl shadow-sm border border-slate-800">
-                <h3 id="form-title" class="font-bold text-md mb-3 text-indigo-400">+ 新增記事</h3>
-                <form id="task-form" onsubmit="handleTaskSubmit(event)" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+            <!-- 新增/修改表單 -->
+            <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl shadow-lg">
+                <h3 id="form-title" class="text-sm font-bold text-slate-300 mb-3">+ 新增記事</h3>
+                <form id="task-form" onsubmit="handleTaskSubmit(event)" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <input type="hidden" id="edit-task-id">
-                    <input type="text" id="task-title" placeholder="記事標題..." required class="border border-slate-700 bg-slate-800 text-slate-100 placeholder-slate-500 p-2 rounded text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
-                    <select id="task-quadrant" class="border border-slate-700 bg-slate-800 text-slate-100 p-2 rounded text-sm">
-                        <option value="q1">🔥 重要且很急</option>
-                        <option value="q2">💡 重要但不急</option>
-                        <option value="q3">⚡ 不重要但很急</option>
-                        <option value="q4">☕ 不重要也不急</option>
-                    </select>
-                    <input type="date" id="task-date" required class="border border-slate-700 bg-slate-800 text-slate-100 p-2 rounded text-sm">
-                    <select id="task-repeat" class="border border-slate-700 bg-slate-800 text-slate-100 p-2 rounded text-sm">
-                        <option value="none">不重複</option>
-                        <option value="daily">每天重複</option>
-                        <option value="weekly">每週重複</option>
-                        <option value="monthly">每月重複</option>
-                    </select>
-                    <input type="number" id="task-points" placeholder="獎勵點數 (例: 10)" value="10" min="0" class="border border-slate-700 bg-slate-800 text-slate-100 p-2 rounded text-sm">
-                    <input type="text" id="task-note" placeholder="純文字備註..." class="border border-slate-700 bg-slate-800 text-slate-100 placeholder-slate-500 p-2 rounded text-sm">
-                    <div class="sm:col-span-2 md:col-span-3 flex gap-2">
-                        <button type="submit" id="task-submit-btn" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded text-sm font-semibold transition">建立記事</button>
-                        <button type="button" id="task-cancel-btn" onclick="resetTaskForm()" class="hidden bg-slate-700 hover:bg-slate-600 text-slate-200 px-4 py-2 rounded text-sm transition">取消修改</button>
+                    
+                    <div class="sm:col-span-2">
+                        <label class="block text-[10px] text-slate-400 mb-0.5">任務標題</label>
+                        <input type="text" id="task-title" required placeholder="例如：會計練習題、背單字..." class="w-full border border-slate-700 bg-slate-800 text-slate-100 p-2 rounded text-sm">
+                    </div>
+
+                    <div>
+                        <label class="block text-[10px] text-slate-400 mb-0.5">象限分類</label>
+                        <select id="task-quadrant" class="w-full border border-slate-700 bg-slate-800 text-slate-100 p-2 rounded text-sm">
+                            <option value="q1">Q1：重要且緊急 (立刻做)</option>
+                            <option value="q2" selected>Q2：重要但不緊急 (排計畫)</option>
+                            <option value="q3">Q3：不重要但緊急 (授權/快做)</option>
+                            <option value="q4">Q4：不重要且不緊急 (有空再說)</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-[10px] text-slate-400 mb-0.5">獎勵點數</label>
+                        <input type="number" id="task-points" value="15" min="0" class="w-full border border-slate-700 bg-slate-800 text-slate-100 p-2 rounded text-sm">
+                    </div>
+
+                    <!-- 起訖日期區間 -->
+                    <div class="grid grid-cols-2 gap-2 sm:col-span-1">
+                        <div>
+                            <label class="block text-[10px] text-slate-400 mb-0.5">開始日期</label>
+                            <input type="date" id="task-start-date" required class="w-full border border-slate-700 bg-slate-800 text-slate-100 p-2 rounded text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-slate-400 mb-0.5">結束期限</label>
+                            <input type="date" id="task-end-date" required class="w-full border border-slate-700 bg-slate-800 text-slate-100 p-2 rounded text-sm">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-[10px] text-slate-400 mb-0.5">重複頻率</label>
+                        <select id="task-repeat" class="w-full border border-slate-700 bg-slate-800 text-slate-100 p-2 rounded text-sm">
+                            <option value="none">不重複</option>
+                            <option value="daily">每天重複</option>
+                            <option value="weekly">每周重複</option>
+                        </select>
+                    </div>
+
+                    <div class="sm:col-span-2">
+                        <label class="block text-[10px] text-slate-400 mb-0.5">備註說明 (選填)</label>
+                        <textarea id="task-note" rows="2" placeholder="詳細內容或題數..." class="w-full border border-slate-700 bg-slate-800 text-slate-100 p-2 rounded text-sm"></textarea>
+                    </div>
+
+                    <div class="sm:col-span-2 flex justify-end gap-2">
+                        <button type="button" id="task-cancel-btn" onclick="resetTaskForm()" class="hidden bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded text-sm">取消</button>
+                        <button type="submit" id="task-submit-btn" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded text-sm font-medium">建立記事</button>
                     </div>
                 </form>
             </div>
 
-            <!-- 四象限展示區 -->
-            <div>
-                <div class="flex justify-between items-center mb-3">
-                    <h3 class="font-bold text-slate-300">目前顯示日期：<span id="selected-date-display" class="text-indigo-400">全部</span></h3>
-                    <button onclick="clearDateFilter()" class="text-xs text-indigo-400 underline">顯示全部日期</button>
+            <!-- 四象限九宮格檢視 -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Q1 -->
+                <div class="bg-slate-900 border border-red-950/60 p-4 rounded-xl shadow-lg flex flex-col">
+                    <div class="flex justify-between items-center mb-3 border-b border-red-950 pb-2">
+                        <h3 class="font-bold text-red-400 text-sm">🔥 Q1：重要且緊急</h3>
+                        <span class="text-xs text-slate-500">立即行動</span>
+                    </div>
+                    <div id="list-q1" class="space-y-2 flex-1"></div>
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <!-- Q1 -->
-                    <div class="bg-slate-900 border border-red-900/50 p-4 rounded-xl shadow-sm">
-                        <h4 class="font-bold text-red-400 mb-2 border-b border-red-900/50 pb-1">🔥 重要又很急</h4>
-                        <div id="list-q1" class="space-y-2 min-h-[100px]"></div>
+                <!-- Q2 -->
+                <div class="bg-slate-900 border border-indigo-950/60 p-4 rounded-xl shadow-lg flex flex-col">
+                    <div class="flex justify-between items-center mb-3 border-b border-indigo-950 pb-2">
+                        <h3 class="font-bold text-indigo-400 text-sm">💡 Q2：重要但不緊急</h3>
+                        <span class="text-xs text-slate-500">長遠規劃</span>
                     </div>
-                    <!-- Q2 -->
-                    <div class="bg-slate-900 border border-blue-900/50 p-4 rounded-xl shadow-sm">
-                        <h4 class="font-bold text-blue-400 mb-2 border-b border-blue-900/50 pb-1">💡 重要但不急</h4>
-                        <div id="list-q2" class="space-y-2 min-h-[100px]"></div>
+                    <div id="list-q2" class="space-y-2 flex-1"></div>
+                </div>
+                <!-- Q3 -->
+                <div class="bg-slate-900 border border-amber-950/60 p-4 rounded-xl shadow-lg flex flex-col">
+                    <div class="flex justify-between items-center mb-3 border-b border-amber-950 pb-2">
+                        <h3 class="font-bold text-amber-400 text-sm">⚡ Q3：不重要但緊急</h3>
+                        <span class="text-xs text-slate-500">減少干擾</span>
                     </div>
-                    <!-- Q3 -->
-                    <div class="bg-slate-900 border border-amber-900/50 p-4 rounded-xl shadow-sm">
-                        <h4 class="font-bold text-amber-400 mb-2 border-b border-amber-900/50 pb-1">⚡ 不重要但很急</h4>
-                        <div id="list-q3" class="space-y-2 min-h-[100px]"></div>
+                    <div id="list-q3" class="space-y-2 flex-1"></div>
+                </div>
+                <!-- Q4 -->
+                <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl shadow-lg flex flex-col">
+                    <div class="flex justify-between items-center mb-3 border-b border-slate-800 pb-2">
+                        <h3 class="font-bold text-slate-400 text-sm">☕ Q4：不重要且不緊急</h3>
+                        <span class="text-xs text-slate-500">放鬆休閒</span>
                     </div>
-                    <!-- Q4 -->
-                    <div class="bg-slate-900 border border-emerald-900/50 p-4 rounded-xl shadow-sm">
-                        <h4 class="font-bold text-emerald-400 mb-2 border-b border-emerald-900/50 pb-1">☕ 不重要也不急</h4>
-                        <div id="list-q4" class="space-y-2 min-h-[100px]"></div>
-                    </div>
+                    <div id="list-q4" class="space-y-2 flex-1"></div>
                 </div>
             </div>
         </section>
 
-        <!-- ==================== 第二頁：超時未作頁 ==================== -->
-        <section id="page-2" class="hidden space-y-4">
-            <div class="bg-slate-900 p-4 rounded-xl shadow-sm border border-slate-800">
-                <h2 class="font-bold text-lg text-slate-200 mb-2">⏳ 超時未作與歷史未完成事項</h2>
-                <p class="text-xs text-slate-400 mb-4">這裡顯示非今日且未完成的記事。逾期未作的任務點數會隨時間折舊遞減（最低歸零，不倒扣總點數）。</p>
+        <!-- 區塊 2：逾期 Backlog -->
+        <section id="section-backlog" class="hidden space-y-4">
+            <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl shadow-lg">
+                <h3 class="font-bold text-amber-400 text-sm mb-1">⏳ 逾期未完成清單 (Backlog)</h3>
+                <p class="text-xs text-slate-400 mb-4">超過期限未完成的任務會在此顯示，每日會自動折舊扣減 5 點，趕快把它們清掉吧！</p>
                 <div id="backlog-list" class="space-y-3"></div>
             </div>
         </section>
 
-        <!-- ==================== 第三頁：獎勵兌換頁 ==================== -->
-        <section id="page-3" class="hidden space-y-6">
-            <!-- 點數看板 -->
-            <div class="bg-gradient-to-r from-indigo-900 to-purple-900 text-white p-6 rounded-2xl shadow-md border border-indigo-700/50 flex justify-between items-center">
-                <div>
-                    <p class="text-indigo-200 text-sm">目前可用點數</p>
-                    <h2 id="points-display" class="text-4xl font-ext500 mt-1">0 點</h2>
+        <!-- 區塊 3：獎勵商城 -->
+        <section id="section-store" class="hidden space-y-4">
+            <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl shadow-lg">
+                <h3 class="font-bold text-emerald-400 text-sm mb-1">🎁 獎勵兌換商城</h3>
+                <p class="text-xs text-slate-400 mb-4">用你的自律點數來解鎖專屬小確幸！</p>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" id="store-items-list">
+                    <!-- 動態載入商城項目 -->
                 </div>
-                <div class="text-6xl">🏆</div>
-            </div>
-
-            <!-- 新增/編輯獎勵表單 -->
-            <div class="bg-slate-900 p-4 rounded-xl shadow-sm border border-slate-800">
-                <h3 id="reward-form-title" class="font-bold text-md mb-3 text-indigo-400">+ 自訂兌換獎勵</h3>
-                <form id="reward-form" onsubmit="handleRewardSubmit(event)" class="flex flex-col sm:flex-row gap-2">
-                    <input type="hidden" id="edit-reward-id">
-                    <input type="text" id="reward-name" placeholder="獎勵名稱 (例: 一杯珍珠奶茶)" required class="flex-1 border border-slate-700 bg-slate-800 text-slate-100 placeholder-slate-500 p-2 rounded text-sm">
-                    <input type="number" id="reward-cost" placeholder="所需點數" min="1" required class="w-full sm:w-28 border border-slate-700 bg-slate-800 text-slate-100 p-2 rounded text-sm">
-                    <div class="flex gap-2">
-                        <button type="submit" id="reward-submit-btn" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded text-sm font-semibold">新增</button>
-                        <button type="button" id="reward-cancel-btn" onclick="resetRewardForm()" class="hidden bg-slate-700 hover:bg-slate-600 text-slate-200 px-3 py-2 rounded text-sm">取消</button>
-                    </div>
-                </form>
-            </div>
-
-            <!-- 獎勵列表 -->
-            <div class="bg-slate-900 p-4 rounded-xl shadow-sm border border-slate-800">
-                <h3 class="font-bold text-lg text-slate-200 mb-3">🎁 兌換商城</h3>
-                <div id="rewards-list" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
             </div>
         </section>
 
     </main>
 
-    <!-- 主應用程式邏輯區 -->
     <script>
-        // 內建精選激勵金言（每次開 App 隨機更換）
-        const quotes = [
-            "你的時間有限，所以不要為別人而活。——賈伯斯",
-            "勇氣不是沒有恐懼，而是戰勝恐懼，跨越恐懼。——曼德拉",
-            "走得最慢的人，只要他不走回頭路，也比慢走的人走得快。——伏爾泰",
-            "痛苦只是暫時的，放棄卻是永恆的。——蘭斯·阿姆斯壯",
-            "成功的唯一祕訣，是堅持到最後一秒鐘。——海明威",
-            "自律給你真正的自由。——名言",
-            "種一棵樹最好的時間是十年前，其次是現在。——古訓",
-            "不積跬步，無以至千里。——荀子",
-            "追夢的人永遠年輕，因為他們的眼裡有光。——村上春樹",
-            "夢想不會逃跑，會逃跑的永遠是你自己。——宮崎駿"
+        let tasks = JSON.parse(localStorage.getItem('focusquest_tasks')) || [];
+        let userPoints = parseInt(localStorage.getItem('focusquest_points')) || 0;
+        let selectedDateFilter = "";
+
+        const storeItems = [
+            { id: 1, name: "普通 Oreo 冰炫風", points: 50, desc: "經典口味，讀書寫程式的最佳精神糧食" },
+            { id: 2, name: "雙倍 Oreo 冰炫風", points: 70, desc: "加量升級版，給努力一整天的自己" },
+            { id: 3, name: "7-11 飲料任選", points: 35, desc: "鋁箔包、茶飲或想喝的超商飲料" },
+            { id: 4, name: "60元內手搖飲任選", points: 50, desc: "飲料店的美味飲品，輕鬆解饞" }
         ];
-
-        let tasks = JSON.parse(localStorage.getItem('fq_tasks')) || [];
-        let rewards = JSON.parse(localStorage.getItem('fq_rewards')) || [
-            { id: 1, name: "一杯珍珠奶茶", cost: 50 },
-            { id: 2, name: "看一場電影", cost: 200 }
-        ];
-        let userPoints = parseInt(localStorage.getItem('fq_points')) || 0;
-        let selectedDateFilter = null;
-        let currentYear = new Date().getFullYear();
-        let currentMonth = new Date().getMonth();
-
-        window.onload = function() {
-            setRandomQuote();
-            renderCalendar();
-            renderTasks();
-            renderBacklog();
-            renderRewards();
-            updatePointsDisplay();
-            document.getElementById('task-date').value = getTodayString();
-            
-            // 註冊 PWA Service Worker
-            if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('sw.js')
-                .then(() => console.log('PWA Service Worker 註冊成功'))
-                .catch(err => console.log('PWA 註冊失敗: ', err));
-            }
-        };
-
-        function setRandomQuote() {
-            const random = quotes[Math.floor(Math.random() * quotes.length)];
-            document.getElementById('quote-box').innerText = `"${random}"`;
-        }
-
-        function switchTab(pageNum) {
-            for (let i = 1; i <= 3; i++) {
-                document.getElementById(`page-${i}`).classList.add('hidden');
-                document.getElementById(`tab-btn-${i}`).className = "flex-1 py-3 text-center font-medium text-slate-400 hover:text-indigo-400 transition border-b-2 border-transparent";
-            }
-            document.getElementById(`page-${pageNum}`).classList.remove('hidden');
-            document.getElementById(`tab-btn-${pageNum}`).className = "flex-1 py-3 text-center font-bold text-indigo-400 border-b-2 border-indigo-500 transition";
-        }
 
         function getTodayString() {
-            const d = new Date();
-            return d.toISOString().split('T')[0];
+            const today = new Date();
+            const yyyy = today.getFullYear();
+            const mm = String(today.getMonth() + 1).padStart(2, '0');
+            const dd = String(today.getDate()).padStart(2, '0');
+            return `${yyyy}-${mm}-${dd}`;
         }
 
-        function changeMonth(direction) {
-            currentMonth += direction;
-            if (currentMonth > 11) { currentMonth = 0; currentYear++; }
-            if (currentMonth < 0) { currentMonth = 11; currentYear--; }
-            renderCalendar();
-        }
+        window.onload = function() {
+            const today = getTodayString();
+            document.getElementById('task-start-date').value = today;
+            document.getElementById('task-end-date').value = today;
+            renderAll();
+        };
 
-        function renderCalendar() {
-            const monthNames = ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"];
-            document.getElementById('calendar-month-year').innerText = `${currentYear}年 ${monthNames[currentMonth]}`;
-            
-            const grid = document.getElementById('calendar-grid');
-            grid.innerHTML = '';
-
-            const daysOfWeek = ['日', '一', '二', '三', '四', '五', '六'];
-            daysOfWeek.forEach(d => {
-                grid.innerHTML += `<div class="font-bold text-slate-500 text-xs py-1">${d}</div>`;
+        function switchTab(tabName) {
+            ['quadrants', 'backlog', 'store'].forEach(t => {
+                document.getElementById(`section-${t}`).classList.add('hidden');
+                document.getElementById(`tab-${t}`).classList.remove('border-indigo-500', 'text-indigo-400');
+                document.getElementById(`tab-${t}`).classList.add('border-transparent', 'text-slate-400');
             });
-
-            const firstDayIndex = new Date(currentYear, currentMonth, 1).getDay();
-            const totalDays = new Date(currentYear, currentMonth + 1, 0).getDate();
-            const todayStr = getTodayString();
-
-            for (let i = 0; i < firstDayIndex; i++) {
-                grid.innerHTML += `<div></div>`;
-            }
-
-            for (let day = 1; day <= totalDays; day++) {
-                const monthStr = String(currentMonth + 1).padStart(2, '0');
-                const dayStr = String(day).padStart(2, '0');
-                const dateString = `${currentYear}-${monthStr}-${dayStr}`;
-
-                let isToday = (dateString === todayStr);
-                let isSelected = (dateString === selectedDateFilter);
-
-                let btnClass = "py-1.5 rounded-full text-xs transition cursor-pointer hover:bg-slate-800 text-slate-300 ";
-                if (isToday) btnClass += "border border-indigo-500 font-bold ";
-                if (isSelected) btnClass += "bg-indigo-600 text-white hover:bg-indigo-700 font-bold ";
-
-                grid.innerHTML += `<div onclick="filterByDate('${dateString}')" class="${btnClass}">${day}</div>`;
-            }
+            document.getElementById(`section-${tabName}`).classList.remove('hidden');
+            document.getElementById(`tab-${tabName}`).classList.add('border-indigo-500', 'text-indigo-400');
+            document.getElementById(`tab-${tabName}`).classList.remove('border-transparent', 'text-slate-400');
+            if(tabName === 'backlog') renderBacklog();
+            if(tabName === 'store') renderStore();
         }
 
         function filterByDate(dateStr) {
             selectedDateFilter = dateStr;
-            document.getElementById('selected-date-display').innerText = dateStr;
-            renderCalendar();
             renderTasks();
         }
 
-        function clearDateFilter() {
-            selectedDateFilter = null;
-            document.getElementById('selected-date-display').innerText = "全部";
-            renderCalendar();
+        function resetDateFilter() {
+            selectedDateFilter = "";
+            document.getElementById('date-filter').value = "";
             renderTasks();
         }
 
@@ -278,7 +229,8 @@
             const editId = document.getElementById('edit-task-id').value;
             const title = document.getElementById('task-title').value;
             const quadrant = document.getElementById('task-quadrant').value;
-            const date = document.getElementById('task-date').value || getTodayString();
+            const startDate = document.getElementById('task-start-date').value || getTodayString();
+            const endDate = document.getElementById('task-end-date').value || startDate;
             const repeat = document.getElementById('task-repeat').value;
             const points = parseInt(document.getElementById('task-points').value) || 0;
             const note = document.getElementById('task-note').value;
@@ -288,7 +240,8 @@
                 if (task) {
                     task.title = title;
                     task.quadrant = quadrant;
-                    task.date = date;
+                    task.startDate = startDate;
+                    task.endDate = endDate;
                     task.repeat = repeat;
                     task.points = points;
                     task.note = note;
@@ -296,7 +249,7 @@
             } else {
                 const newTask = {
                     id: Date.now(),
-                    title, quadrant, date, repeat, points, note,
+                    title, quadrant, startDate, endDate, repeat, points, note,
                     clickState: 0
                 };
                 tasks.push(newTask);
@@ -306,6 +259,16 @@
             resetTaskForm();
         }
 
+        function resetTaskForm() {
+            document.getElementById('task-form').reset();
+            document.getElementById('edit-task-id').value = "";
+            document.getElementById('form-title').innerText = "+ 新增記事";
+            document.getElementById('task-submit-btn').innerText = "建立記事";
+            document.getElementById('task-cancel-btn').classList.add('hidden');
+            document.getElementById('task-start-date').value = getTodayString();
+            document.getElementById('task-end-date').value = getTodayString();
+        }
+
         function editTask(id) {
             const task = tasks.find(t => t.id == id);
             if (!task) return;
@@ -313,7 +276,8 @@
             document.getElementById('edit-task-id').value = task.id;
             document.getElementById('task-title').value = task.title;
             document.getElementById('task-quadrant').value = task.quadrant;
-            document.getElementById('task-date').value = task.date;
+            document.getElementById('task-start-date').value = task.startDate || task.date;
+            document.getElementById('task-end-date').value = task.endDate || task.date;
             document.getElementById('task-repeat').value = task.repeat;
             document.getElementById('task-points').value = task.points;
             document.getElementById('task-note').value = task.note;
@@ -324,37 +288,59 @@
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
-        function resetTaskForm() {
-            document.getElementById('task-form').reset();
-            document.getElementById('edit-task-id').value = "";
-            document.getElementById('form-title').innerText = "+ 新增記事";
-            document.getElementById('task-submit-btn').innerText = "建立記事";
-            document.getElementById('task-cancel-btn').classList.add('hidden');
-            document.getElementById('task-date').value = getTodayString();
-        }
-
         function deleteTask(id) {
-            if (confirm('確定要刪除這項記事嗎？')) {
-                tasks = tasks.filter(t => t.id !== id);
-                saveAndRefresh();
-            }
+            tasks = tasks.filter(t => t.id != id);
+            saveAndRefresh();
         }
 
         function handleTaskClick(id) {
-            const task = tasks.find(t => t.id === id);
+            const task = tasks.find(t => t.id == id);
             if (!task) return;
 
-            task.clickState = (task.clickState + 1) % 3;
-
-            if (task.clickState === 1) {
+            if (task.clickState === 0) {
+                task.clickState = 1; // 完成
                 userPoints += task.points;
-            } else if (task.clickState === 2) {
+            } else if (task.clickState === 1) {
+                task.clickState = 2; // 延後
                 userPoints -= task.points;
-                let d = new Date(task.date);
-                d.setDate(d.getDate() + 1);
-                task.date = d.toISOString().split('T')[0];
+            } else {
+                task.clickState = 0; // 恢復正常
             }
             saveAndRefresh();
+        }
+
+        function completeBacklogTask(id, decayedPoints) {
+            const task = tasks.find(t => t.id == id);
+            if (!task) return;
+            task.clickState = 1;
+            userPoints += decayedPoints;
+            saveAndRefresh();
+        }
+
+        function buyReward(itemId) {
+            const item = storeItems.find(i => i.id == itemId);
+            if (!item) return;
+            if (userPoints < item.points) {
+                alert("點數不足，再加把勁完成任務吧！");
+                return;
+            }
+            if (confirm(`確定要花費 ${item.points} 點兌換「${item.name}」嗎？`)) {
+                userPoints -= item.points;
+                saveAndRefresh();
+                alert(`成功兌換 ${item.name}！好好享用吧！`);
+            }
+        }
+
+        function saveAndRefresh() {
+            localStorage.setItem('focusquest_tasks', JSON.stringify(tasks));
+            localStorage.setItem('focusquest_points', userPoints);
+            renderAll();
+        }
+
+        function renderAll() {
+            document.getElementById('user-points').innerText = userPoints;
+            renderTasks();
+            renderBacklogCount();
         }
 
         function renderTasks() {
@@ -363,12 +349,17 @@
             });
 
             tasks.forEach(task => {
-                if (selectedDateFilter && task.date !== selectedDateFilter) return;
+                const sDate = task.startDate || task.date;
+                const eDate = task.endDate || task.date;
+
+                if (selectedDateFilter) {
+                    if (selectedDateFilter < sDate || selectedDateFilter > eDate) return;
+                }
 
                 const container = document.getElementById(`list-${task.quadrant}`);
                 if (!container) return;
 
-                let cardClass = "bg-slate-800/80 border border-slate-700 p-3 rounded-lg shadow-xs flex flex-col justify-between transition select-none ";
+                let cardClass = "bg-slate-800/80 border border-slate-700 p-3 rounded-lg shadow-sm flex flex-col justify-between transition select-none ";
                 if (task.clickState === 1) cardClass += "task-completed";
                 else if (task.clickState === 2) cardClass += "task-postponed";
 
@@ -381,7 +372,7 @@
                             </div>
                             ${task.note ? `<p class="text-xs text-slate-400 mt-1">${escapeHtml(task.note)}</p>` : ''}
                             <div class="flex justify-between items-center mt-2 text-[10px] text-slate-400">
-                                <span>日期: ${task.date}</span>
+                                <span>📅 ${sDate} ~ ${eDate}</span>
                                 <span>狀態: ${task.clickState === 1 ? '已完成' : task.clickState === 2 ? '已延後' : '進行中'}</span>
                             </div>
                         </div>
@@ -395,13 +386,24 @@
             });
         }
 
+        function renderBacklogCount() {
+            const todayStr = getTodayString();
+            const backlogTasks = tasks.filter(t => {
+                const eDate = t.endDate || t.date;
+                return eDate < todayStr && t.clickState !== 1;
+            });
+            document.getElementById('backlog-count').innerText = backlogTasks.length;
+        }
+
         function renderBacklog() {
             const backlogList = document.getElementById('backlog-list');
             backlogList.innerHTML = '';
             const todayStr = getTodayString();
 
-            const backlogTasks = tasks.filter(t => t.date < todayStr && t.clickState !== 1);
-            document.getElementById('backlog-count').innerText = backlogTasks.length;
+            const backlogTasks = tasks.filter(t => {
+                const eDate = t.endDate || t.date;
+                return eDate < todayStr && t.clickState !== 1;
+            });
 
             if (backlogTasks.length === 0) {
                 backlogList.innerHTML = `<p class="text-slate-500 text-sm text-center py-6">太棒了！沒有逾期未完成的記事。</p>`;
@@ -409,7 +411,8 @@
             }
 
             backlogTasks.forEach(task => {
-                const diffTime = new Date(todayStr) - new Date(task.date);
+                const eDate = task.endDate || task.date;
+                const diffTime = new Date(todayStr) - new Date(eDate);
                 const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
                 let decayedPoints = Math.max(0, task.points - (diffDays * 5));
 
@@ -417,7 +420,7 @@
                     <div class="bg-amber-950/30 border border-amber-900/50 p-3 rounded-lg flex justify-between items-center">
                         <div>
                             <h4 class="font-semibold text-sm text-slate-200">${escapeHtml(task.title)}</h4>
-                            <p class="text-xs text-slate-400">原定日期: ${task.date} (逾期 ${diffDays} 天) | 點數: <span class="text-amber-400 font-bold">${decayedPoints} 點</span></p>
+                            <p class="text-xs text-slate-400">期限: ${task.startDate || task.date} ~ ${eDate} (逾期 ${diffDays} 天) | 點數: <span class="text-amber-400 font-bold">${decayedPoints} 點</span></p>
                         </div>
                         <div class="space-x-2">
                             <button onclick="completeBacklogTask(${task.id}, ${decayedPoints})" class="bg-emerald-700 hover:bg-emerald-600 text-white px-3 py-1 rounded text-xs">補完成</button>
@@ -428,108 +431,21 @@
             });
         }
 
-        function completeBacklogTask(id, points) {
-            const task = tasks.find(t => t.id === id);
-            if (task) {
-                task.clickState = 1;
-                userPoints += points;
-                saveAndRefresh();
-            }
-        }
-
-        function handleRewardSubmit(e) {
-            e.preventDefault();
-            const editId = document.getElementById('edit-reward-id').value;
-            const name = document.getElementById('reward-name').value;
-            const cost = parseInt(document.getElementById('reward-cost').value) || 10;
-
-            if (editId) {
-                const reward = rewards.find(r => r.id == editId);
-                if (reward) {
-                    reward.name = name;
-                    reward.cost = cost;
-                }
-            } else {
-                const newReward = { id: Date.now(), name, cost };
-                rewards.push(newReward);
-            }
-
-            saveAndRefresh();
-            resetRewardForm();
-        }
-
-        function editReward(id) {
-            const reward = rewards.find(r => r.id == id);
-            if (!reward) return;
-
-            document.getElementById('edit-reward-id').value = reward.id;
-            document.getElementById('reward-name').value = reward.name;
-            document.getElementById('reward-cost').value = reward.cost;
-
-            document.getElementById('reward-form-title').innerText = "✎ 修改獎勵";
-            document.getElementById('reward-submit-btn').innerText = "儲存修改";
-            document.getElementById('reward-cancel-btn').classList.remove('hidden');
-        }
-
-        function resetRewardForm() {
-            document.getElementById('reward-form').reset();
-            document.getElementById('edit-reward-id').value = "";
-            document.getElementById('reward-form-title').innerText = "+ 自訂兌換獎勵";
-            document.getElementById('reward-submit-btn').innerText = "新增";
-            document.getElementById('reward-cancel-btn').classList.add('hidden');
-        }
-
-        function deleteReward(id) {
-            if (confirm('確定要刪除這個獎勵項目嗎？')) {
-                rewards = rewards.filter(r => r.id !== id);
-                saveAndRefresh();
-            }
-        }
-
-        function renderRewards() {
-            const list = document.getElementById('rewards-list');
-            list.innerHTML = '';
-
-            rewards.forEach(r => {
-                list.innerHTML += `
-                    <div class="border border-slate-700 p-3 rounded-lg flex justify-between items-center bg-slate-800/80 shadow-xs">
+        function renderStore() {
+            const storeList = document.getElementById('store-items-list');
+            storeList.innerHTML = '';
+            storeItems.forEach(item => {
+                storeList.innerHTML += `
+                    <div class="bg-slate-800/60 border border-slate-700 p-3 rounded-xl flex justify-between items-center">
                         <div>
-                            <h4 class="font-semibold text-sm text-slate-200">${escapeHtml(r.name)}</h4>
-                            <p class="text-xs text-indigo-400 font-medium">${r.cost} 點</p>
+                            <h4 class="font-semibold text-sm text-slate-200">${item.name}</h4>
+                            <p class="text-xs text-slate-400 mt-0.5">${item.desc}</p>
+                            <span class="inline-block mt-2 text-xs font-bold text-amber-400">${item.points} 點</span>
                         </div>
-                        <div class="flex items-center gap-2">
-                            <button onclick="redeemReward(${r.id}, ${r.cost})" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded text-xs font-semibold">兌換</button>
-                            <button onclick="editReward(${r.id})" class="text-xs text-indigo-400 hover:underline">修改</button>
-                            <button onclick="deleteReward(${r.id})" class="text-xs text-red-400 hover:underline">刪除</button>
-                        </div>
+                        <button onclick="buyReward(${item.id})" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded text-xs font-medium">兌換</button>
                     </div>
                 `;
             });
-        }
-
-        function redeemReward(id, cost) {
-            if (userPoints >= cost) {
-                userPoints -= cost;
-                alert('兌換成功！好好犒賞自己吧！ 🎉');
-                saveAndRefresh();
-            } else {
-                alert('點數不足，快去完成記事賺取點數吧！ 💪');
-            }
-        }
-
-        function updatePointsDisplay() {
-            document.getElementById('user-points').innerText = userPoints;
-            document.getElementById('points-display').innerText = `${userPoints} 點`;
-        }
-
-        function saveAndRefresh() {
-            localStorage.setItem('fq_tasks', JSON.stringify(tasks));
-            localStorage.setItem('fq_rewards', JSON.stringify(rewards));
-            localStorage.setItem('fq_points', userPoints);
-            renderTasks();
-            renderBacklog();
-            renderRewards();
-            updatePointsDisplay();
         }
 
         function escapeHtml(str) {
