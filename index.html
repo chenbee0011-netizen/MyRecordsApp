@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FocusQuest - 遊戲化四象限記事</title>
+    <!-- 引入 PWA 宣告 -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#4f46e5">
     <!-- 引入 Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -151,11 +154,22 @@
 
     </main>
 
-    <!-- 引入外部名言庫 JS -->
-    <script src="quotes.js"></script>
-
     <!-- 主應用程式邏輯區 -->
     <script>
+        // 內建精選激勵金言（每次開 App 隨機更換）
+        const quotes = [
+            "你的時間有限，所以不要為別人而活。——賈伯斯",
+            "勇氣不是沒有恐懼，而是戰勝恐懼，跨越恐懼。——曼德拉",
+            "走得最慢的人，只要他不走回頭路，也比慢走的人走得快。——伏爾泰",
+            "痛苦只是暫時的，放棄卻是永恆的。——蘭斯·阿姆斯壯",
+            "成功的唯一祕訣，是堅持到最後一秒鐘。——海明威",
+            "自律給你真正的自由。——名言",
+            "種一棵樹最好的時間是十年前，其次是現在。——古訓",
+            "不積跬步，無以至千里。——荀子",
+            "追夢的人永遠年輕，因為他們的眼裡有光。——村上春樹",
+            "夢想不會逃跑，會逃跑的永遠是你自己。——宮崎駿"
+        ];
+
         let tasks = JSON.parse(localStorage.getItem('fq_tasks')) || [];
         let rewards = JSON.parse(localStorage.getItem('fq_rewards')) || [
             { id: 1, name: "一杯珍珠奶茶", cost: 50 },
@@ -174,16 +188,18 @@
             renderRewards();
             updatePointsDisplay();
             document.getElementById('task-date').value = getTodayString();
+            
+            // 註冊 PWA Service Worker
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('sw.js')
+                .then(() => console.log('PWA Service Worker 註冊成功'))
+                .catch(err => console.log('PWA 註冊失敗: ', err));
+            }
         };
 
-        // 每次開啓/重新整理 App 時隨機更換一句金句
         function setRandomQuote() {
-            if (typeof quotes !== 'undefined' && quotes.length > 0) {
-                const random = quotes[Math.floor(Math.random() * quotes.length)];
-                document.getElementById('quote-box').innerText = `"${random}"`;
-            } else {
-                document.getElementById('quote-box').innerText = `"每一次的堅持，都是為了更好的自己。"`;
-            }
+            const random = quotes[Math.floor(Math.random() * quotes.length)];
+            document.getElementById('quote-box').innerText = `"${random}"`;
         }
 
         function switchTab(pageNum) {
@@ -193,8 +209,6 @@
             }
             document.getElementById(`page-${pageNum}`).classList.remove('hidden');
             document.getElementById(`tab-btn-${pageNum}`).className = "flex-1 py-3 text-center font-bold text-indigo-400 border-b-2 border-indigo-500 transition";
-            // 如果希望切換分頁時也順便換一句，可以保留下面這行；若只想「開App時換一次」，可以拿掉
-            // setRandomQuote(); 
         }
 
         function getTodayString() {
@@ -202,7 +216,6 @@
             return d.toISOString().split('T')[0];
         }
 
-        // ==================== 月曆與日期過濾 ====================
         function changeMonth(direction) {
             currentMonth += direction;
             if (currentMonth > 11) { currentMonth = 0; currentYear++; }
@@ -260,7 +273,6 @@
             renderTasks();
         }
 
-        // ==================== 任務管理 (含新增、修改、刪除) ====================
         function handleTaskSubmit(e) {
             e.preventDefault();
             const editId = document.getElementById('edit-task-id').value;
@@ -383,7 +395,6 @@
             });
         }
 
-        // ==================== 超時未作頁 (Backlog) ====================
         function renderBacklog() {
             const backlogList = document.getElementById('backlog-list');
             backlogList.innerHTML = '';
@@ -426,7 +437,6 @@
             }
         }
 
-        // ==================== 獎勵兌換機制 (含新增、修改、刪除) ====================
         function handleRewardSubmit(e) {
             e.preventDefault();
             const editId = document.getElementById('edit-reward-id').value;
